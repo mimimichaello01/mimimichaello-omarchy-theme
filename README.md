@@ -23,8 +23,8 @@ Marvin. Репозиторий содержит как обычные файлы
 
 ## Установка
 
-Рекомендуемое имя GitHub-репозитория — `mimimichaello`. Тогда Omarchy установит
-его в путь, который используется в командах ниже.
+Установщик автоматически определяет имя каталога темы, поэтому репозиторий может
+называться `mimimichaello-omarchy-theme`.
 
 ```bash
 omarchy theme install https://github.com/mimimichaello01/mimimichaello-omarchy-theme.git
@@ -35,7 +35,7 @@ omarchy theme install https://github.com/mimimichaello01/mimimichaello-omarchy-t
 ### Вариант 1: визуальный слой без загрузочного экрана
 
 ```bash
-~/.config/omarchy/themes/mimimichaello/install/mimimichaello
+~/.config/omarchy/themes/mimimichaello-omarchy-theme/install/mimimichaello
 ```
 
 Команда применит тему, настройки Hyprland, уведомления, Lock screen, GTK и
@@ -44,7 +44,7 @@ omarchy theme install https://github.com/mimimichaello01/mimimichaello-omarchy-t
 ### Вариант 2: полная установка с Plymouth
 
 ```bash
-~/.config/omarchy/themes/mimimichaello/install/mimimichaello --with-plymouth
+~/.config/omarchy/themes/mimimichaello-omarchy-theme/install/mimimichaello --with-plymouth
 ```
 
 Дополнительно будет применён экран ввода пароля при запуске компьютера.
@@ -56,13 +56,13 @@ Omarchy запросит `sudo`, потому что для Plymouth требу�
 Показать текущее состояние:
 
 ```bash
-~/.config/omarchy/themes/mimimichaello/install/mimimichaello --status
+~/.config/omarchy/themes/mimimichaello-omarchy-theme/install/mimimichaello --status
 ```
 
 Вернуть состояние, сохранённое перед первым запуском установщика:
 
 ```bash
-~/.config/omarchy/themes/mimimichaello/install/mimimichaello --revert
+~/.config/omarchy/themes/mimimichaello-omarchy-theme/install/mimimichaello --revert
 ```
 
 Если тема устанавливалась с `--with-plymouth`, команда `--revert` также вернёт
@@ -86,13 +86,13 @@ Omarchy запросит `sudo`, потому что для Plymouth требу�
 После обновления файлов репозитория снова запустите нужный вариант установщика:
 
 ```bash
-~/.config/omarchy/themes/mimimichaello/install/mimimichaello
+~/.config/omarchy/themes/mimimichaello-omarchy-theme/install/mimimichaello
 ```
 
 или:
 
 ```bash
-~/.config/omarchy/themes/mimimichaello/install/mimimichaello --with-plymouth
+~/.config/omarchy/themes/mimimichaello-omarchy-theme/install/mimimichaello --with-plymouth
 ```
 
 Установщик рассчитан на повторный запуск: он не добавляет дубликаты настроек и

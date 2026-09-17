@@ -10,6 +10,7 @@
 set -euo pipefail
 
 THEME_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+THEME_NAME=${THEME_DIR##*/}
 CONFIG_ROOT="$HOME/.config"
 DATA_ROOT="$HOME/.local/share"
 STATE_DIR="$HOME/.local/state/mimimichaello"
@@ -64,6 +65,8 @@ require_command() {
 
 check_payload() {
   local required
+  [[ $THEME_NAME =~ ^[a-zA-Z0-9._-]+$ ]] || die "unsupported theme directory name: $THEME_NAME"
+
   for required in \
     "$THEME_DIR/colors.toml" \
     "$THEME_DIR/unlock.png" \
@@ -289,7 +292,7 @@ install_layer() {
   install_hook
 
   say "Apply Mimimichaello"
-  omarchy theme set mimimichaello
+  omarchy theme set "$THEME_NAME"
   apply_gsettings
   reload_desktop
   note "installation complete"
@@ -299,7 +302,7 @@ install_layer() {
 apply_plymouth() {
   say "Plymouth boot unlock"
   note "The next command needs sudo and rebuilds the boot unlock screen."
-  omarchy plymouth set by theme mimimichaello
+  omarchy plymouth set by theme "$THEME_NAME"
   touch "$PLYMOUTH_APPLIED"
   note "installed Mimimichaello Plymouth"
 }
@@ -387,6 +390,7 @@ status_layer() {
   fi
 
   note "active theme: $(cat "$HOME/.local/state/omarchy/current/theme.name" 2>/dev/null || echo unknown)"
+  note "theme package: $THEME_NAME"
   note "Plymouth: $(omarchy plymouth current 2>/dev/null || echo unknown)"
   [[ -f $PLYMOUTH_APPLIED ]] && note "Plymouth managed by installer: yes" || note "Plymouth managed by installer: no"
   path_exists "$CONFIG_ROOT/hypr/mimimichaello.lua" && note "Hyprland module: present" || note "Hyprland module: absent"

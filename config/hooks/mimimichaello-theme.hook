@@ -2,14 +2,18 @@
 
 set -euo pipefail
 
-[[ ${1:-} == "mimimichaello" ]] || exit 0
+theme_name=${1:-}
+[[ $theme_name =~ ^[a-zA-Z0-9._-]+$ ]] || exit 0
+
+theme_dir="$HOME/.config/omarchy/themes/$theme_name"
+[[ -f $theme_dir/install/mimimichaello ]] || exit 0
 
 if [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]]; then
   gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
   gsettings set org.gnome.desktop.interface gtk-theme "Graphite-Dark"
 fi
 
-font_source="$HOME/.config/omarchy/themes/mimimichaello/fonts"
+font_source="$theme_dir/fonts"
 font_target="$HOME/.local/share/fonts/mimimichaello"
 fonts_changed=0
 
