@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -euo pipefail
+
+[[ ${1:-} == "mimimichaello" ]] || exit 0
+
+if [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]]; then
+  gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
+  gsettings set org.gnome.desktop.interface gtk-theme "Graphite-Dark"
+fi
+
+font_source="$HOME/.config/omarchy/themes/mimimichaello/fonts"
+font_target="$HOME/.local/share/fonts/mimimichaello"
+fonts_changed=0
+
+for source_file in "$font_source"/*.ttf; do
+  [[ -f $source_file ]] || continue
+
+  target_file="$font_target/${source_file##*/}"
+  if ! cmp -s "$source_file" "$target_file"; then
+    install -Dm644 "$source_file" "$target_file"
+    fonts_changed=1
+  fi
+done
+
+if (( fonts_changed )); then
+  fc-cache -f "$font_target"
+fi

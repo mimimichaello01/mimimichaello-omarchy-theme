@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "mimimichaello.lock",
+  "name": "mimimichaello Lock Screen",
+  "version": "1.0.0",
+  "author": "mimimichaello",
+  "description": "Marvin lock screen customized with the mimimichaello name.",
+  "omarchy": {
+    "capabilities": [
+      "authentication"
+    ],
+    "clonedFrom": "omarchy.lock"
+  },
+  "kinds": [
+    "service"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}

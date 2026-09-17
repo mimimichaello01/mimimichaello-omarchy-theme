@@ -1,0 +1,32 @@
+-- Personal overrides from the previous installation.
+hl.config({
+  general = {
+    gaps_in = 8,
+    gaps_out = 8,
+    border_size = 1,
+  },
+  decoration = {
+    rounding = 12,
+    active_opacity = 0.96,
+    inactive_opacity = 0.92,
+    shadow = {
+      enabled = true,
+      range = 40,
+      render_power = 2,
+      color = "rgba(0000001f)",
+      color_inactive = "rgba(0000000f)",
+    },
+  },
+  misc = { focus_on_activate = false },
+})
+
+-- Marvin motion: fast window entrances/exits and a 320ms workspace slide.
+hl.curve("marvinEnter", { type = "bezier", points = { { 0.22, 1 }, { 0.44, 1 } } })
+hl.curve("marvinLeave", { type = "bezier", points = { { 0.70, 0 }, { 0.84, 0 } } })
+hl.curve("marvinMove", { type = "bezier", points = { { 0.40, 0 }, { 0.20, 1 } } })
+
+hl.animation({ leaf = "windowsIn", enabled = true, speed = 2.0, bezier = "marvinEnter", style = "popin 92%" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 1.2, bezier = "marvinLeave", style = "popin 92%" })
+hl.animation({ leaf = "fadeIn", enabled = true, speed = 1.2, bezier = "marvinEnter" })
+hl.animation({ leaf = "fadeOut", enabled = true, speed = 0.8, bezier = "marvinLeave" })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 3.2, bezier = "marvinMove", style = "slide" })

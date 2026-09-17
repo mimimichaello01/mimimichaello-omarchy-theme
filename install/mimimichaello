@@ -1,0 +1,411 @@
+#!/bin/bash
+
+# Portable visual layer for the Mimimichaello Omarchy theme.
+#
+#   install/mimimichaello                 install or update
+#   install/mimimichaello --with-plymouth install or update, including boot unlock
+#   install/mimimichaello --status        inspect without changing anything
+#   install/mimimichaello --revert        restore the pre-install snapshot
+
+set -euo pipefail
+
+THEME_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+CONFIG_ROOT="$HOME/.config"
+DATA_ROOT="$HOME/.local/share"
+STATE_DIR="$HOME/.local/state/mimimichaello"
+SNAPSHOT_DIR="$STATE_DIR/snapshot"
+SNAPSHOT_MANIFEST="$SNAPSHOT_DIR/manifest.tsv"
+PLYMOUTH_SNAPSHOT="$SNAPSHOT_DIR/plymouth.name"
+PLYMOUTH_APPLIED="$STATE_DIR/plymouth-applied"
+SHELL_JSON="$CONFIG_ROOT/omarchy/shell.json"
+HYPRLAND_LUA="$CONFIG_ROOT/hypr/hyprland.lua"
+HYPR_MARKER="-- mimimichaello:config-layer"
+HYPR_REQUIRE='require("hypr.mimimichaello") -- mimimichaello:config-layer'
+
+CONFIG_PATHS=(
+  "hypr/hyprland.lua"
+  "hypr/mimimichaello.lua"
+  "omarchy/shell.json"
+  "omarchy/plugins/marvin.notifications"
+  "omarchy/plugins/mimimichaello.lock"
+  "omarchy/hooks/theme-set.d/mimimichaello-theme.hook"
+  "gtk-3.0/settings.ini"
+  "gtk-4.0/settings.ini"
+  "gtk-4.0/assets"
+  "gtk-4.0/gtk.css"
+  "gtk-4.0/gtk-dark.css"
+)
+
+DATA_PATHS=(
+  "themes/Graphite-Dark"
+  "fonts/mimimichaello"
+)
+
+GSETTINGS_KEYS=(
+  "org.gnome.desktop.interface|color-scheme|color-scheme"
+  "org.gnome.desktop.interface|gtk-theme|gtk-theme"
+  "org.gnome.desktop.interface|font-name|font-name"
+  "org.gnome.desktop.interface|icon-theme|icon-theme"
+  "org.gnome.desktop.interface|cursor-theme|cursor-theme"
+  "org.gnome.desktop.interface|cursor-size|cursor-size"
+)
+
+say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
+note() { printf '  %s\n' "$*"; }
+die() { printf 'Error: %s\n' "$*" >&2; exit 1; }
+
+path_exists() {
+  [[ -e $1 || -L $1 ]]
+}
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
+}
+
+check_payload() {
+  local required
+  for required in \
+    "$THEME_DIR/colors.toml" \
+    "$THEME_DIR/unlock.png" \
+    "$THEME_DIR/config/hypr/mimimichaello.lua.payload" \
+    "$THEME_DIR/config/gtk-3.0/settings.ini" \
+    "$THEME_DIR/config/gtk-4.0/settings.ini" \
+    "$THEME_DIR/config/hooks/mimimichaello-theme.hook" \
+    "$THEME_DIR/plugins/marvin.notifications/manifest.json" \
+    "$THEME_DIR/plugins/mimimichaello.lock/manifest.json" \
+    "$THEME_DIR/vendor/Graphite-Dark/index.theme"; do
+    [[ -e $required ]] || die "theme payload is incomplete: $required"
+  done
+
+  [[ -f $HYPRLAND_LUA ]] || die "Hyprland config not found: $HYPRLAND_LUA"
+  [[ -f $SHELL_JSON ]] || die "Omarchy shell config not found: $SHELL_JSON"
+
+  require_command jq
+  require_command omarchy
+  omarchy plugin validate "$THEME_DIR/plugins/marvin.notifications"
+  omarchy plugin validate "$THEME_DIR/plugins/mimimichaello.lock"
+}
+
+snapshot_path() {
+  local scope=$1
+  local relative=$2
+  local root source backup state
+
+  case $scope in
+    config) root=$CONFIG_ROOT ;;
+    data) root=$DATA_ROOT ;;
+    *) die "unknown snapshot scope: $scope" ;;
+  esac
+
+  source="$root/$relative"
+  backup="$SNAPSHOT_DIR/$scope/$relative"
+
+  if path_exists "$source"; then
+    state=present
+    mkdir -p "$(dirname -- "$backup")"
+    cp -a -- "$source" "$backup"
+  else
+    state=absent
+  fi
+
+  printf '%s\t%s\t%s\n' "$scope" "$relative" "$state" >>"$SNAPSHOT_MANIFEST"
+}
+
+snapshot_gsettings() {
+  local item schema key filename value
+  [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]] || return 0
+  command -v gsettings >/dev/null 2>&1 || return 0
+
+  mkdir -p "$SNAPSHOT_DIR/gsettings"
+  for item in "${GSETTINGS_KEYS[@]}"; do
+    IFS='|' read -r schema key filename <<<"$item"
+    if value=$(gsettings get "$schema" "$key" 2>/dev/null); then
+      printf '%s\n' "$value" >"$SNAPSHOT_DIR/gsettings/$filename"
+    fi
+  done
+}
+
+snapshot_once() {
+  local relative current_theme
+  if [[ -f $SNAPSHOT_MANIFEST ]]; then
+    if [[ ! -f $PLYMOUTH_SNAPSHOT ]]; then
+      omarchy plymouth current >"$PLYMOUTH_SNAPSHOT" 2>/dev/null || : >"$PLYMOUTH_SNAPSHOT"
+    fi
+    note "existing snapshot kept: $SNAPSHOT_DIR"
+    return
+  fi
+
+  say "Snapshot"
+  mkdir -p "$SNAPSHOT_DIR"
+  : >"$SNAPSHOT_MANIFEST"
+
+  for relative in "${CONFIG_PATHS[@]}"; do
+    snapshot_path config "$relative"
+  done
+  for relative in "${DATA_PATHS[@]}"; do
+    snapshot_path data "$relative"
+  done
+
+  current_theme=$(cat "$HOME/.local/state/omarchy/current/theme.name" 2>/dev/null || true)
+  printf '%s\n' "$current_theme" >"$SNAPSHOT_DIR/theme.name"
+  omarchy plymouth current >"$PLYMOUTH_SNAPSHOT" 2>/dev/null || : >"$PLYMOUTH_SNAPSHOT"
+  snapshot_gsettings
+  date -Is >"$SNAPSHOT_DIR/taken-at"
+  note "saved to $SNAPSHOT_DIR"
+}
+
+install_hyprland() {
+  say "Hyprland geometry and motion"
+  install -Dm644 "$THEME_DIR/config/hypr/mimimichaello.lua.payload" \
+    "$CONFIG_ROOT/hypr/mimimichaello.lua"
+
+  if ! grep -qF -- "$HYPR_MARKER" "$HYPRLAND_LUA"; then
+    if grep -qF 'require("hypr.looknfeel")' "$HYPRLAND_LUA"; then
+      sed -i "/require(\"hypr.looknfeel\")/a $HYPR_REQUIRE" "$HYPRLAND_LUA"
+    else
+      printf '\n%s\n' "$HYPR_REQUIRE" >>"$HYPRLAND_LUA"
+    fi
+  fi
+  note "installed hypr/mimimichaello.lua"
+}
+
+replace_directory() {
+  local source=$1
+  local target=$2
+  rm -rf -- "$target"
+  mkdir -p "$(dirname -- "$target")"
+  cp -a -- "$source" "$target"
+}
+
+install_plugins() {
+  say "Notifications and lock screen"
+  replace_directory "$THEME_DIR/plugins/marvin.notifications" \
+    "$CONFIG_ROOT/omarchy/plugins/marvin.notifications"
+  replace_directory "$THEME_DIR/plugins/mimimichaello.lock" \
+    "$CONFIG_ROOT/omarchy/plugins/mimimichaello.lock"
+  note "installed two shell plugins"
+}
+
+patch_shell_json() {
+  local temporary
+  temporary=$(mktemp "$SHELL_JSON.mimimichaello.XXXXXX")
+
+  jq '
+    def plugin_id: if type == "object" then .id else . end;
+    .plugins = (
+      ((.plugins // [])
+        | map(select(
+            (plugin_id != "marvin.notifications") and
+            (plugin_id != "mimimichaello.lock")
+          ))) +
+      [{"id":"marvin.notifications"}, {"id":"mimimichaello.lock"}]
+    ) |
+    .disabledPlugins = (
+      ((.disabledPlugins // [])
+        | map(select(
+            . != "marvin.notifications" and
+            . != "mimimichaello.lock"
+          ))) +
+      ["omarchy.notifications", "omarchy.lock", "omarchy.idle"]
+      | unique
+    ) |
+    .cloneSourceRestores = (
+      ((.cloneSourceRestores // []) +
+       ["marvin.notifications", "mimimichaello.lock"])
+      | unique
+    )
+  ' "$SHELL_JSON" >"$temporary"
+
+  chmod --reference="$SHELL_JSON" "$temporary"
+  mv -- "$temporary" "$SHELL_JSON"
+  note "enabled custom notifications and lock; disabled automatic idle"
+}
+
+install_graphite() {
+  local graphite_target="$DATA_ROOT/themes/Graphite-Dark"
+  local gtk4="$CONFIG_ROOT/gtk-4.0"
+
+  say "Graphite-Dark"
+  replace_directory "$THEME_DIR/vendor/Graphite-Dark" "$graphite_target"
+  install -Dm644 "$THEME_DIR/config/gtk-3.0/settings.ini" \
+    "$CONFIG_ROOT/gtk-3.0/settings.ini"
+  install -Dm644 "$THEME_DIR/config/gtk-4.0/settings.ini" \
+    "$gtk4/settings.ini"
+
+  mkdir -p "$gtk4"
+  rm -rf -- "$gtk4/assets" "$gtk4/gtk.css" "$gtk4/gtk-dark.css"
+  ln -s "$graphite_target/gtk-4.0/assets" "$gtk4/assets"
+  ln -s "$graphite_target/gtk-4.0/gtk.css" "$gtk4/gtk.css"
+  ln -s "$graphite_target/gtk-4.0/gtk-dark.css" "$gtk4/gtk-dark.css"
+  note "installed GTK3 theme and GTK4 links"
+}
+
+install_fonts() {
+  local font_target="$DATA_ROOT/fonts/mimimichaello"
+  say "Fonts"
+  replace_directory "$THEME_DIR/fonts" "$font_target"
+  if command -v fc-cache >/dev/null 2>&1; then
+    fc-cache -f "$font_target" >/dev/null 2>&1 || true
+  fi
+  note "installed Inter and Libre Baskerville"
+}
+
+install_hook() {
+  install -Dm755 "$THEME_DIR/config/hooks/mimimichaello-theme.hook" \
+    "$CONFIG_ROOT/omarchy/hooks/theme-set.d/mimimichaello-theme.hook"
+}
+
+apply_gsettings() {
+  [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]] || return 0
+  command -v gsettings >/dev/null 2>&1 || return 0
+
+  gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
+  gsettings set org.gnome.desktop.interface gtk-theme "Graphite-Dark"
+  gsettings set org.gnome.desktop.interface font-name "Inter 10"
+  gsettings set org.gnome.desktop.interface icon-theme "Yaru-sage"
+  gsettings set org.gnome.desktop.interface cursor-theme "Yaru"
+  gsettings set org.gnome.desktop.interface cursor-size 24
+}
+
+reload_desktop() {
+  if command -v hyprctl >/dev/null 2>&1; then
+    hyprctl reload >/dev/null 2>&1 || note "Hyprland reload failed; log in again to apply it"
+    local errors
+    errors=$(hyprctl configerrors 2>/dev/null || true)
+    [[ -z $errors ]] || note "Hyprland reports: $errors"
+  fi
+
+  omarchy restart shell >/dev/null 2>&1 || note "shell restart failed; restart it manually"
+}
+
+install_layer() {
+  check_payload
+  snapshot_once
+  install_hyprland
+  install_plugins
+  patch_shell_json
+  install_graphite
+  install_fonts
+  install_hook
+
+  say "Apply Mimimichaello"
+  omarchy theme set mimimichaello
+  apply_gsettings
+  reload_desktop
+  note "installation complete"
+  note "revert with: $THEME_DIR/install/mimimichaello --revert"
+}
+
+apply_plymouth() {
+  say "Plymouth boot unlock"
+  note "The next command needs sudo and rebuilds the boot unlock screen."
+  omarchy plymouth set by theme mimimichaello
+  touch "$PLYMOUTH_APPLIED"
+  note "installed Mimimichaello Plymouth"
+}
+
+restore_plymouth() {
+  [[ -f $PLYMOUTH_APPLIED ]] || return 0
+
+  local previous_plymouth
+  previous_plymouth=$(<"$PLYMOUTH_SNAPSHOT")
+
+  say "Restore Plymouth boot unlock"
+  case $previous_plymouth in
+    default)
+      omarchy plymouth reset
+      ;;
+    "")
+      note "previous Plymouth is unknown; leaving the current one unchanged"
+      ;;
+    *)
+      omarchy plymouth set by theme "$previous_plymouth"
+      ;;
+  esac
+}
+
+restore_gsettings() {
+  local item schema key filename value_file
+  [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]] || return 0
+  command -v gsettings >/dev/null 2>&1 || return 0
+
+  for item in "${GSETTINGS_KEYS[@]}"; do
+    IFS='|' read -r schema key filename <<<"$item"
+    value_file="$SNAPSHOT_DIR/gsettings/$filename"
+    [[ -f $value_file ]] || continue
+    gsettings set "$schema" "$key" "$(<"$value_file")" || true
+  done
+}
+
+restore_paths() {
+  local scope relative state root target backup
+  while IFS=$'\t' read -r scope relative state; do
+    case $scope in
+      config) root=$CONFIG_ROOT ;;
+      data) root=$DATA_ROOT ;;
+      *) die "invalid snapshot scope: $scope" ;;
+    esac
+
+    target="$root/$relative"
+    backup="$SNAPSHOT_DIR/$scope/$relative"
+    rm -rf -- "$target"
+
+    if [[ $state == present ]]; then
+      mkdir -p "$(dirname -- "$target")"
+      cp -a -- "$backup" "$target"
+    fi
+  done <"$SNAPSHOT_MANIFEST"
+}
+
+revert_layer() {
+  [[ -f $SNAPSHOT_MANIFEST ]] || die "no installation snapshot found"
+
+  restore_plymouth
+
+  say "Restore snapshot"
+  restore_paths
+
+  local previous_theme
+  previous_theme=$(<"$SNAPSHOT_DIR/theme.name")
+  if [[ -n $previous_theme ]]; then
+    omarchy theme set "$previous_theme" || note "could not restore theme: $previous_theme"
+  fi
+
+  restore_gsettings
+  reload_desktop
+  rm -rf -- "$STATE_DIR"
+  note "pre-install state restored"
+}
+
+status_layer() {
+  say "Mimimichaello status"
+  if [[ -f $SNAPSHOT_MANIFEST ]]; then
+    note "snapshot: $SNAPSHOT_DIR"
+    note "taken: $(<"$SNAPSHOT_DIR/taken-at")"
+  else
+    note "snapshot: absent (installer has not run)"
+  fi
+
+  note "active theme: $(cat "$HOME/.local/state/omarchy/current/theme.name" 2>/dev/null || echo unknown)"
+  note "Plymouth: $(omarchy plymouth current 2>/dev/null || echo unknown)"
+  [[ -f $PLYMOUTH_APPLIED ]] && note "Plymouth managed by installer: yes" || note "Plymouth managed by installer: no"
+  path_exists "$CONFIG_ROOT/hypr/mimimichaello.lua" && note "Hyprland module: present" || note "Hyprland module: absent"
+  grep -qF -- "$HYPR_MARKER" "$HYPRLAND_LUA" 2>/dev/null && note "Hyprland require: present" || note "Hyprland require: absent"
+  path_exists "$CONFIG_ROOT/omarchy/plugins/marvin.notifications" && note "notifications: present" || note "notifications: absent"
+  path_exists "$CONFIG_ROOT/omarchy/plugins/mimimichaello.lock" && note "lock screen: present" || note "lock screen: absent"
+  path_exists "$DATA_ROOT/themes/Graphite-Dark" && note "Graphite-Dark: present" || note "Graphite-Dark: absent"
+}
+
+case ${1:-} in
+  "") install_layer ;;
+  --with-plymouth)
+    install_layer
+    apply_plymouth
+    ;;
+  --status) status_layer ;;
+  --revert) revert_layer ;;
+  *)
+    printf 'Usage: %s [--with-plymouth|--status|--revert]\n' "$0" >&2
+    exit 2
+    ;;
+esac
