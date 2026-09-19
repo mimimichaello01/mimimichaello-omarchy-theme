@@ -58,5 +58,5 @@ color14 = "#8fb8b0"
 color15 = "#f2ebe0"
 
 # Window focus remains visible without turning every surface orange.
-hyprland_active_border   = "rgba(ff5a12cc)"
+hyprland_active_border   = "rgba(a69b8c80)"
 hyprland_inactive_border = "rgba(3a342c66)"
