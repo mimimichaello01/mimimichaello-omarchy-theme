@@ -20,12 +20,22 @@ PLYMOUTH_SNAPSHOT="$SNAPSHOT_DIR/plymouth.name"
 PLYMOUTH_APPLIED="$STATE_DIR/plymouth-applied"
 SHELL_JSON="$CONFIG_ROOT/omarchy/shell.json"
 HYPRLAND_LUA="$CONFIG_ROOT/hypr/hyprland.lua"
+ZSHRC="$HOME/.zshrc"
 HYPR_MARKER="-- mimimichaello:config-layer"
 HYPR_REQUIRE='require("hypr.mimimichaello") -- mimimichaello:config-layer'
+ZSH_MARKER="# mimimichaello:atlas-shell-colors"
 
 CONFIG_PATHS=(
+  "Code/User/settings.json"
+  "fastfetch/config.jsonc"
   "hypr/hyprland.lua"
   "hypr/mimimichaello.lua"
+  "micro/colorschemes/atlas.micro"
+  "micro/settings.json"
+  "omarchy/themed/alacritty.toml.tpl"
+  "omarchy/themed/foot.ini.tpl"
+  "omarchy/themed/ghostty.conf.tpl"
+  "omarchy/themed/kitty.conf.tpl"
   "omarchy/shell.json"
   "omarchy/plugins/marvin.notifications"
   "omarchy/plugins/mimimichaello.lock"
@@ -35,6 +45,14 @@ CONFIG_PATHS=(
   "gtk-4.0/assets"
   "gtk-4.0/gtk.css"
   "gtk-4.0/gtk-dark.css"
+  "starship.toml"
+  "yazi/theme.toml"
+  "yazi/flavors/mimimichaello-atlas.yazi"
+  "zsh/mimimichaello-atlas.zsh"
+)
+
+HOME_PATHS=(
+  ".zshrc"
 )
 
 DATA_PATHS=(
@@ -74,6 +92,18 @@ check_payload() {
     "$THEME_DIR/config/gtk-3.0/settings.ini" \
     "$THEME_DIR/config/gtk-4.0/settings.ini" \
     "$THEME_DIR/config/hooks/mimimichaello-theme.hook" \
+    "$THEME_DIR/config/apps/fastfetch/config.jsonc" \
+    "$THEME_DIR/config/apps/micro/colorschemes/atlas.micro" \
+    "$THEME_DIR/config/apps/starship.toml" \
+    "$THEME_DIR/config/apps/yazi/theme.toml" \
+    "$THEME_DIR/config/apps/yazi/flavors/mimimichaello-atlas.yazi/flavor.toml" \
+    "$THEME_DIR/config/apps/yazi/flavors/mimimichaello-atlas.yazi/tmtheme.xml" \
+    "$THEME_DIR/config/apps/zsh/mimimichaello-atlas.zsh" \
+    "$THEME_DIR/config/omarchy/themed/alacritty.toml.tpl" \
+    "$THEME_DIR/config/omarchy/themed/foot.ini.tpl" \
+    "$THEME_DIR/config/omarchy/themed/ghostty.conf.tpl" \
+    "$THEME_DIR/config/omarchy/themed/kitty.conf.tpl" \
+    "$THEME_DIR/tools/patch_vscode_settings.py" \
     "$THEME_DIR/plugins/marvin.notifications/manifest.json" \
     "$THEME_DIR/plugins/mimimichaello.lock/manifest.json" \
     "$THEME_DIR/vendor/Graphite-Dark/index.theme"; do
@@ -85,6 +115,7 @@ check_payload() {
 
   require_command jq
   require_command omarchy
+  require_command python
   omarchy plugin validate "$THEME_DIR/plugins/marvin.notifications"
   omarchy plugin validate "$THEME_DIR/plugins/mimimichaello.lock"
 }
@@ -97,8 +128,16 @@ snapshot_path() {
   case $scope in
     config) root=$CONFIG_ROOT ;;
     data) root=$DATA_ROOT ;;
+    home) root=$HOME ;;
     *) die "unknown snapshot scope: $scope" ;;
   esac
+
+  if [[ -f $SNAPSHOT_MANIFEST ]] && awk -F '\t' -v wanted_scope="$scope" -v wanted_path="$relative" '
+    $1 == wanted_scope && $2 == wanted_path { found = 1 }
+    END { exit(found ? 0 : 1) }
+  ' "$SNAPSHOT_MANIFEST"; then
+    return
+  fi
 
   source="$root/$relative"
   backup="$SNAPSHOT_DIR/$scope/$relative"
@@ -122,25 +161,19 @@ snapshot_gsettings() {
   mkdir -p "$SNAPSHOT_DIR/gsettings"
   for item in "${GSETTINGS_KEYS[@]}"; do
     IFS='|' read -r schema key filename <<<"$item"
-    if value=$(gsettings get "$schema" "$key" 2>/dev/null); then
+    if [[ ! -f $SNAPSHOT_DIR/gsettings/$filename ]] && value=$(gsettings get "$schema" "$key" 2>/dev/null); then
       printf '%s\n' "$value" >"$SNAPSHOT_DIR/gsettings/$filename"
     fi
   done
 }
 
 snapshot_once() {
-  local relative current_theme
-  if [[ -f $SNAPSHOT_MANIFEST ]]; then
-    if [[ ! -f $PLYMOUTH_SNAPSHOT ]]; then
-      omarchy plymouth current >"$PLYMOUTH_SNAPSHOT" 2>/dev/null || : >"$PLYMOUTH_SNAPSHOT"
-    fi
-    note "existing snapshot kept: $SNAPSHOT_DIR"
-    return
-  fi
+  local relative current_theme snapshot_existed=0
+  [[ -f $SNAPSHOT_MANIFEST ]] && snapshot_existed=1
 
-  say "Snapshot"
   mkdir -p "$SNAPSHOT_DIR"
-  : >"$SNAPSHOT_MANIFEST"
+  touch "$SNAPSHOT_MANIFEST"
+  (( snapshot_existed )) || say "Snapshot"
 
   for relative in "${CONFIG_PATHS[@]}"; do
     snapshot_path config "$relative"
@@ -148,13 +181,25 @@ snapshot_once() {
   for relative in "${DATA_PATHS[@]}"; do
     snapshot_path data "$relative"
   done
+  for relative in "${HOME_PATHS[@]}"; do
+    snapshot_path home "$relative"
+  done
 
-  current_theme=$(cat "$HOME/.local/state/omarchy/current/theme.name" 2>/dev/null || true)
-  printf '%s\n' "$current_theme" >"$SNAPSHOT_DIR/theme.name"
-  omarchy plymouth current >"$PLYMOUTH_SNAPSHOT" 2>/dev/null || : >"$PLYMOUTH_SNAPSHOT"
+  if [[ ! -f $SNAPSHOT_DIR/theme.name ]]; then
+    current_theme=$(cat "$HOME/.local/state/omarchy/current/theme.name" 2>/dev/null || true)
+    printf '%s\n' "$current_theme" >"$SNAPSHOT_DIR/theme.name"
+  fi
+  if [[ ! -f $PLYMOUTH_SNAPSHOT ]]; then
+    omarchy plymouth current >"$PLYMOUTH_SNAPSHOT" 2>/dev/null || : >"$PLYMOUTH_SNAPSHOT"
+  fi
   snapshot_gsettings
-  date -Is >"$SNAPSHOT_DIR/taken-at"
-  note "saved to $SNAPSHOT_DIR"
+  [[ -f $SNAPSHOT_DIR/taken-at ]] || date -Is >"$SNAPSHOT_DIR/taken-at"
+
+  if (( snapshot_existed )); then
+    note "existing snapshot kept and extended: $SNAPSHOT_DIR"
+  else
+    note "saved to $SNAPSHOT_DIR"
+  fi
 }
 
 install_hyprland() {
@@ -258,6 +303,53 @@ install_hook() {
     "$CONFIG_ROOT/omarchy/hooks/theme-set.d/mimimichaello-theme.hook"
 }
 
+patch_zshrc() {
+  mkdir -p "$(dirname -- "$ZSHRC")"
+  touch "$ZSHRC"
+
+  if grep -qF -- "$ZSH_MARKER" "$ZSHRC"; then
+    sed -i "s|^.*$ZSH_MARKER.*$|source \"\$HOME/.config/zsh/mimimichaello-atlas.zsh\" $ZSH_MARKER|" "$ZSHRC"
+  else
+    printf '\nsource "$HOME/.config/zsh/mimimichaello-atlas.zsh" %s\n' "$ZSH_MARKER" >>"$ZSHRC"
+  fi
+}
+
+install_app_themes() {
+  local micro_settings temporary template
+
+  say "Terminal and application colors"
+
+  install -Dm644 "$THEME_DIR/config/apps/starship.toml" "$CONFIG_ROOT/starship.toml"
+  install -Dm644 "$THEME_DIR/config/apps/fastfetch/config.jsonc" "$CONFIG_ROOT/fastfetch/config.jsonc"
+  install -Dm644 "$THEME_DIR/config/apps/micro/colorschemes/atlas.micro" \
+    "$CONFIG_ROOT/micro/colorschemes/atlas.micro"
+  install -Dm644 "$THEME_DIR/config/apps/yazi/theme.toml" "$CONFIG_ROOT/yazi/theme.toml"
+  replace_directory "$THEME_DIR/config/apps/yazi/flavors/mimimichaello-atlas.yazi" \
+    "$CONFIG_ROOT/yazi/flavors/mimimichaello-atlas.yazi"
+  install -Dm644 "$THEME_DIR/config/apps/zsh/mimimichaello-atlas.zsh" \
+    "$CONFIG_ROOT/zsh/mimimichaello-atlas.zsh"
+
+  micro_settings="$CONFIG_ROOT/micro/settings.json"
+  mkdir -p "$(dirname -- "$micro_settings")"
+  temporary=$(mktemp "$micro_settings.mimimichaello.XXXXXX")
+  if [[ -f $micro_settings ]]; then
+    jq '.colorscheme = "atlas"' "$micro_settings" >"$temporary"
+    chmod --reference="$micro_settings" "$temporary"
+  else
+    printf '{\n  "colorscheme": "atlas"\n}\n' >"$temporary"
+  fi
+  mv -- "$temporary" "$micro_settings"
+
+  for template in alacritty.toml.tpl foot.ini.tpl ghostty.conf.tpl kitty.conf.tpl; do
+    install -Dm644 "$THEME_DIR/config/omarchy/themed/$template" \
+      "$CONFIG_ROOT/omarchy/themed/$template"
+  done
+
+  python "$THEME_DIR/tools/patch_vscode_settings.py" "$CONFIG_ROOT/Code/User/settings.json"
+  patch_zshrc
+  note "installed ATLAS colors for terminals, VS Code, Yazi, micro, fastfetch, starship and Zsh"
+}
+
 apply_gsettings() {
   [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]] || return 0
   command -v gsettings >/dev/null 2>&1 || return 0
@@ -290,6 +382,7 @@ install_layer() {
   install_graphite
   install_fonts
   install_hook
+  install_app_themes
 
   say "Apply Mimimichaello"
   omarchy theme set "$THEME_NAME"
@@ -346,6 +439,7 @@ restore_paths() {
     case $scope in
       config) root=$CONFIG_ROOT ;;
       data) root=$DATA_ROOT ;;
+      home) root=$HOME ;;
       *) die "invalid snapshot scope: $scope" ;;
     esac
 
@@ -398,6 +492,7 @@ status_layer() {
   path_exists "$CONFIG_ROOT/omarchy/plugins/marvin.notifications" && note "notifications: present" || note "notifications: absent"
   path_exists "$CONFIG_ROOT/omarchy/plugins/mimimichaello.lock" && note "lock screen: present" || note "lock screen: absent"
   path_exists "$DATA_ROOT/themes/Graphite-Dark" && note "Graphite-Dark: present" || note "Graphite-Dark: absent"
+  path_exists "$CONFIG_ROOT/yazi/flavors/mimimichaello-atlas.yazi" && note "ATLAS app colors: present" || note "ATLAS app colors: absent"
 }
 
 case ${1:-} in

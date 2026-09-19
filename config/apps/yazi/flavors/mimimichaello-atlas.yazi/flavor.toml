@@ -1,0 +1,184 @@
+# A TOML linter such as https://taplo.tamasfe.dev/ can use this schema to validate your config.
+# If you encounter any issues, please make an issue at https://github.com/yazi-rs/schemas.
+# Use the alternate form for schema definition instead of using "$schema"="URL" due to stricter
+# config parsing added in Yazi 26.5.6. Read more: https://github.com/sxyazi/yazi/issues/3938#issuecomment-4389721843
+#:schema https://yazi-rs.github.io/schemas/theme.json
+
+# mimimichaello-atlas
+# ATLAS-inspired palette adapted to the existing Yazi semantics.
+#
+# ATLAS colors applied to the existing Yazi interface semantics.
+
+[colors]
+background = "#100E0C"
+foreground = "#D6CFC4"
+selection = "#2A160C"
+cursor = "#FF5A12"
+black = "#0A0908"
+red = "#C22E16"
+green = "#8A9A4A"
+yellow = "#F0A202"
+blue = "#6A8AA0"
+magenta = "#A03C2A"
+cyan = "#6F9A92"
+white = "#D6CFC4"
+bright_black = "#6E675C"
+bright_red = "#E84528"
+bright_green = "#A8B85C"
+bright_yellow = "#FFB020"
+bright_blue = "#8AA8BC"
+bright_magenta = "#C45438"
+bright_cyan = "#8FB8B0"
+bright_white = "#F2EBE0"
+
+[mgr]
+cwd = { fg = "#FF5A12" }
+
+# Find
+find_keyword = { fg = "#FF5A12", bold = true, italic = true, underline = true }
+find_position = { fg = "#A69B8C", bg = "#100E0C", bold = true, italic = true }
+
+# Marker
+marker_copied = { fg = "#A8B85C", bg = "#A8B85C" }
+marker_cut = { fg = "#C22E16", bg = "#C22E16" }
+marker_marked = { fg = "#FF5A12", bg = "#FF5A12" }
+marker_selected = { fg = "#FF5A12", bg = "#FF5A12" }
+
+# Count
+count_copied = { fg = "#100E0C", bg = "#A8B85C" }
+count_cut = { fg = "#100E0C", bg = "#C22E16" }
+count_selected = { fg = "#100E0C", bg = "#FF5A12" }
+
+# Border
+border_symbol = "│"
+border_style = { fg = "#3A342C" }
+
+
+[tabs]
+active = { fg = "#FF5A12", bg = "#100E0C" }
+inactive = { fg = "#A69B8C", bg = "#1C1814" }
+
+
+[mode]
+normal_main = { fg = "#100E0C", bg = "#FF5A12", bold = true }
+normal_alt = { fg = "#FF5A12", bg = "#1C1814" }
+
+select_main = { fg = "#100E0C", bg = "#FF5A12", bold = true }
+select_alt = { fg = "#FF5A12", bg = "#1C1814" }
+
+unset_main = { fg = "#100E0C", bg = "#C22E16", bold = true }
+unset_alt = { fg = "#C22E16", bg = "#1C1814" }
+
+
+[status]
+# Permissions
+perm_sep = { fg = "#3A342C" }
+perm_type = { fg = "#8A9A4A" }
+perm_read = { fg = "#F0A202" }
+perm_write = { fg = "#C22E16" }
+perm_exec = { fg = "#6F9A92" }
+
+# Progress
+progress_label = { bold = true }
+progress_normal = { fg = "#FF5A12", bg = "#100E0C" }
+progress_error = { fg = "#C22E16", bg = "#100E0C" }
+
+
+[pick]
+border = { fg = "#3A342C" }
+active = { fg = "#FF5A12", bold = true }
+inactive = {}
+
+
+[input]
+border = { fg = "#3A342C" }
+title = {}
+value = {}
+selected = { reversed = true }
+
+
+[cmp]
+border = { fg = "#3A342C" }
+
+
+[tasks]
+border = { fg = "#3A342C" }
+title = {}
+hovered = { underline = true }
+
+
+[which]
+mask = { bg = "#100E0C" }
+cand = { fg = "#FF5A12" }
+rest = { fg = "#A69B8C" }
+desc = { fg = "#D6CFC4" }
+separator = "  "
+separator_style = { fg = "#6E675C" }
+
+
+[help]
+on = { fg = "#FF5A12" }
+run = { fg = "#A69B8C" }
+hovered = { bg = "#2A160C", bold = true }
+footer = { fg = "#D6CFC4", bg = "#1C1814" }
+
+
+[spot]
+border = { fg = "#3A342C" }
+title = { fg = "#FF5A12" }
+tbl_col = { fg = "#A69B8C" }
+tbl_cell = { fg = "#D6CFC4", bg = "#1C1814" }
+
+
+[notify]
+title_info = { fg = "#8A9A4A" }
+title_warn = { fg = "#F0A202" }
+title_error = { fg = "#C22E16" }
+
+
+[filetype]
+rules = [
+    # Images
+    { mime = "image/*", fg = "#F0A202" },
+    # Media
+    { mime = "{audio,video}/*", fg = "#A03C2A" },
+    # Archives
+    { mime = "application/{zip,rar,7z*,tar,gzip,xz,zstd,bzip*,lzma,compress,archive,cpio,arj,xar,ms-cab*}", fg = "#C22E16" },
+    # Documents
+    { mime = "application/{pdf,doc,rtf}", fg = "#6F9A92" },
+    { mime = "application/vnd.openxmlformats-officedocument.*", fg = "#6F9A92" },
+    # Virtual file system
+    { mime = "vfs/{absent,stale}", fg = "#6E675C" },
+    # Fallback
+    { url = "*", fg = "#D6CFC4" },
+    { url = "*/", fg = "#D6CFC4" },
+]
+
+
+[icon]
+dirs = [
+    { name = "Desktop", text = "" },
+    { name = "Documents", text = "" },
+    { name = "Downloads", text = "" },
+    { name = "Pictures", text = "" },
+    { name = "Music", text = "" },
+    { name = "Videos", text = "" },
+    { name = ".git", text = "" },
+    { name = ".config", text = "" },
+]
+conds = [
+    # Special files
+    { if = "orphan", text = "", fg = "#D6CFC4" },
+    { if = "link", text = "", fg = "#6F9A92" },
+    { if = "block", text = "", fg = "#F0A202" },
+    { if = "char", text = "", fg = "#F0A202" },
+    { if = "fifo", text = "", fg = "#F0A202" },
+    { if = "sock", text = "", fg = "#F0A202" },
+    { if = "dummy", text = "", fg = "#C22E16" },
+
+    # Fallback
+    { if = "dir & hovered", text = "", fg = "#FF5A12" },
+    { if = "dir", text = "", fg = "#FF5A12" },
+    { if = "exec", text = "", fg = "#8A9A4A" },
+    { if = "!dir", text = "", fg = "#D6CFC4" },
+]

@@ -1,0 +1,4 @@
+[flavor]
+use = "mimimichaello-atlas"
+# For Yazi 0.4 and above:
+dark = "mimimichaello-atlas"

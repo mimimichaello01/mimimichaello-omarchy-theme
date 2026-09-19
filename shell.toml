@@ -1,13 +1,13 @@
-# Marvin shell surfaces. Hand-written; replaces the generated shell.toml.
+# Mimimichaello ATLAS shell surfaces. Hand-written; replaces the generated shell.toml.
 # Depth comes from surfaces: a hairline at 8% of the text colour and, in the
 # config layer, a wide faint shadow. Never a structural border. Tone is a surface property — base
 # for the bar, raised for anything that opens over it.
 
 [bar]
-background       = "#161616"
+background       = "#100e0c"
 background-alpha = 1.0
-text             = "#d6d6d6"
-active           = "#6db8ee"
+text             = "#d6cfc4"
+active           = "#ff5a12"
 scale-with-font  = false
 size-horizontal  = 32
 size-vertical    = 32
@@ -17,35 +17,35 @@ icon-font        = 16
 status-slot      = 24
 
 [hyprland]
-active-border            = "rgba(d6d6d68c)"
-active-border-foreground = "rgba(d6d6d68c)"
+active-border            = "rgba(ff5a12cc)"
+active-border-foreground = "rgba(d6cfc48c)"
 
 [controls]
 # Fill is the text color at alpha, so controls survive any surface tone.
 # Emphasis rises monotonically: 0.06 -> 0.10 -> 0.14 -> 0.18. Focus is the
 # selected fill plus a hairline of the text colour: visible, distinct from
 # hover, and never an accent outline — inputs in the reference have none.
-normal-color        = "#d6d6d6"
+normal-color        = "#d6cfc4"
 normal-fill-alpha   = 0.06
-normal-border       = "#d6d6d6"
+normal-border       = "#d6cfc4"
 normal-border-width = 0
 normal-border-alpha = 0
 
-hover-cursor-color        = "#d6d6d6"
+hover-cursor-color        = "#d6cfc4"
 hover-cursor-fill-alpha   = 0.10
-hover-cursor-border       = "#d6d6d6"
+hover-cursor-border       = "#d6cfc4"
 hover-cursor-border-width = 0
 hover-cursor-border-alpha = 0
 
-focus-color        = "#d6d6d6"
+focus-color        = "#d6cfc4"
 focus-fill-alpha   = 0.14
-focus-border       = "#d6d6d6"
+focus-border       = "#d6cfc4"
 focus-border-width = 1
 focus-border-alpha = 0.24
 
-selected-color        = "#d6d6d6"
+selected-color        = "#d6cfc4"
 selected-fill-alpha   = 0.14
-selected-border       = "#d6d6d6"
+selected-border       = "#d6cfc4"
 selected-border-width = 0
 selected-border-alpha = 0
 
@@ -90,7 +90,7 @@ popup-padding               = 24
 dropdown-width              = 240
 searchable-dropdown-width   = 260
 number-field-width          = 120
-# Tall enough that the "no matches" empty state clears Marvin's 40px rows and
+# Tall enough that the "no matches" empty state clears ATLAS 40px rows and
 # 24px popup padding — upstream's 224 was tuned for 28px rows and clipped it.
 searchable-popup-min-height = 288
 
@@ -117,107 +117,105 @@ icon-large = 24
 # ---------------------------------------------------------------- surfaces
 
 [popups]
-background       = "#1e1e1e"
+background       = "#1c1814"
 background-alpha = 1.0
-text             = "#d6d6d6"
-border           = "#d6d6d6"
+text             = "#d6cfc4"
+border           = "#d6cfc4"
 border-alpha     = 0.10
 border-width     = 1
 
 [tooltip]
-background       = "#262626"
+background       = "#1c1814"
 background-alpha = 1.0
-text             = "#d6d6d6"
-border           = "#262626"
+text             = "#d6cfc4"
+border           = "#1c1814"
 border-alpha     = 0
 border-width     = 0
 
 [notifications]
-# Marvin's signature card, the same navy the battery panel wears — a
-# notification is the one thing that floats over whatever you are doing, so it
-# reads as the theme rather than as the app that sent it. White ink, and the
-# hairline is white too: a dark border would disappear into the tint.
-background       = "#33405b"
+# Notifications use the raised ATLAS surface. The light hairline keeps the
+# floating card visible without introducing another accent-colored block.
+background       = "#1c1814"
 background-alpha = 1.0
-text             = "#ffffff"
-border           = "#ffffff"
+text             = "#f2ebe0"
+border           = "#f2ebe0"
 border-alpha     = 0.14
 border-width     = 1
 # Progress is a hairline; its fill is accent because time left means something.
-countdown        = "#6db8ee"
+countdown        = "#ff5a12"
 
 [launcher]
-background                = "#1e1e1e"
+background                = "#1c1814"
 background-alpha          = 1.0
-text                      = "#d6d6d6"
-border           = "#d6d6d6"
+text                      = "#d6cfc4"
+border           = "#d6cfc4"
 border-alpha     = 0.10
 border-width     = 1
-scrim                     = "#0a0a0a"
+scrim                     = "#080706"
 scrim-alpha               = 0.5
 # Selection is a fill, not a color change. Accent stays rationed.
-selected-background       = "#d6d6d6"
+selected-background       = "#d6cfc4"
 selected-background-alpha = 0.14
-selected-text             = "#d6d6d6"
-selected-border           = "#d6d6d6"
+selected-text             = "#d6cfc4"
+selected-border           = "#d6cfc4"
 selected-border-alpha     = 0
 selected-border-width     = 0
 
 [menu]
-background                = "#1e1e1e"
+background                = "#1c1814"
 background-alpha          = 1.0
-text                      = "#d6d6d6"
-border           = "#d6d6d6"
+text                      = "#d6cfc4"
+border           = "#d6cfc4"
 border-alpha     = 0.10
 border-width     = 1
-scrim                     = "#0a0a0a"
+scrim                     = "#080706"
 scrim-alpha               = 0.5
-selected-background       = "#d6d6d6"
+selected-background       = "#d6cfc4"
 selected-background-alpha = 0.14
-selected-text             = "#d6d6d6"
-selected-border           = "#d6d6d6"
+selected-text             = "#d6cfc4"
+selected-border           = "#d6cfc4"
 selected-border-alpha     = 0
 selected-border-width     = 0
 
 [polkit]
-background         = "#1e1e1e"
+background         = "#1c1814"
 background-alpha   = 1.0
-text               = "#d6d6d6"
-text-error         = "#e38484"
+text               = "#d6cfc4"
+text-error         = "#c22e16"
 # Idle has no border. Error is a state signal, so it may draw one.
-border             = "#1e1e1e"
+border             = "#1c1814"
 border-width       = 0
-border-error       = "#e38484"
+border-error       = "#c22e16"
 border-error-width = 2
 border-alpha       = 1.0
-scrim              = "#0a0a0a"
+scrim              = "#080706"
 scrim-alpha        = 0.5
-accent             = "#6db8ee"
+accent             = "#ff5a12"
 
 [lock]
-background          = "#1e1e1e"
+background          = "#1c1814"
 background-alpha    = 0.85
-text                = "#d6d6d6"
-placeholder         = "#8c8c8c"
-text-error          = "#e38484"
+text                = "#d6cfc4"
+placeholder         = "#a69b8c"
+text-error          = "#c22e16"
 # Idle: no border. Typing: a hairline of the text colour. Wrong password: red.
-border              = "#1e1e1e"
+border              = "#1c1814"
 border-width        = 0
-border-active       = "#d6d6d6"
+border-active       = "#d6cfc4"
 border-active-width = 1
-border-error        = "#e38484"
+border-error        = "#c22e16"
 border-error-width  = 2
 border-alpha        = 0.24
-selection           = "#6db8ee"
+selection           = "#ff5a12"
 selection-alpha     = 0.35
 
 [image-picker]
-scrim                   = "#0a0a0a"
+scrim                   = "#080706"
 scrim-alpha             = 0.6
-text                    = "#d6d6d6"
-selected-border         = "#6db8ee"
+text                    = "#d6cfc4"
+selected-border         = "#ff5a12"
 selected-border-alpha   = 1.0
-unselected-border       = "#d6d6d6"
+unselected-border       = "#d6cfc4"
 unselected-border-alpha = 0.2
 
 # ---------------------------------------------------------------- widgets
@@ -232,27 +230,27 @@ unselected-border-alpha = 0.2
 [marvin-weather]
 # Day is a deep afternoon blue, not a powder blue: white text needs the
 # contrast (a light day sky read at ~2.6:1). Sunset and night are already dark.
-background     = "#4d7bb0"
-background-end = "#2b5687"
-text           = "#ffffff"
-muted          = "#eaf2fb"
-sunset         = "#f2b27a"
-sunset-end     = "#8a6bb3"
-sunset-muted   = "#fbe9d8"
-night          = "#2c3a5c"
-night-end      = "#0f1626"
-night-muted    = "#b8c1d3"
+background     = "#6a8aa0"
+background-end = "#3a5262"
+text           = "#f2ebe0"
+muted          = "#d6cfc4"
+sunset         = "#c86d54"
+sunset-end     = "#a03c2a"
+sunset-muted   = "#f2ebe0"
+night          = "#3a342c"
+night-end      = "#100e0c"
+night-muted    = "#a69b8c"
 
 # The reference's dark card, on both tones. The chip is a soft fill of the
 # attention hue with lighter text of the same hue.
 [marvin-power]
-background     = "#33405b"
-background-end = "#1b2436"
-text           = "#ffffff"
-muted          = "#b8c1d3"
+background     = "#1c1814"
+background-end = "#100e0c"
+text           = "#f2ebe0"
+muted          = "#a69b8c"
 
 # The one status chip in the reference: the note's "Draft", pale yellow with
 # olive text. Every other state (the focus card's "In progress") is muted text.
 [marvin-chip]
-attention-fill = "#f9ecad"
-attention-text = "#574611"
+attention-fill = "#f0a202"
+attention-text = "#100e0c"

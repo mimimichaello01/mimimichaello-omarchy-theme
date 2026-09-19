@@ -1,0 +1,32 @@
+add_newline = false
+format = "$directory$git_branch$python\n$character"
+
+[directory]
+style = "fg:#D6CFC4"
+
+[git_branch]
+symbol = " "
+format = "on [$symbol$branch]($style)"
+style = "bold fg:#A69B8C"
+
+[git_status]
+disabled = true
+
+[python]
+symbol = "🐍 "
+format = " | [$symbol$version $virtualenv]($style)"
+style = "fg:#6A8AA0"
+# virtualenv_format = "($virtualenv)"
+
+[nodejs]
+disabled = true
+
+[package]
+disabled = true
+
+[cmd_duration]
+disabled = true
+
+[character]
+success_symbol = "[❯](fg:#8A9A4A)"
+error_symbol   = "[❯](fg:#E84528)"

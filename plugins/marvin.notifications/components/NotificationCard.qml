@@ -32,8 +32,8 @@ BorderSurface {
   property string fontFamily: ""
 
   // Injected by the container. Maps a themed icon name onto the dark variant
-  // of the icon theme, because this card is navy under the light theme too —
-  // see DarkIconResolver. Null is a working card with the plain lookup.
+  // of the icon theme, because this card remains a dark raised surface — see
+  // DarkIconResolver. Null is a working card with the plain lookup.
   property var iconResolver: null
 
   readonly property bool hovered: hoverTracker.hovered
@@ -135,7 +135,7 @@ BorderSurface {
   // doesn't push content under the bottom edge.
   implicitHeight: mainColumn.implicitHeight + borderTop + borderBottom
   radius: cornerRadius
-  color: "#1e1e1e"
+  color: Color.notifications.background
   borderSpec: cardBorderSpec
 
   // MultiEffect is the shell's shadow (Tray, LockView, ImagePicker all use it).
@@ -289,20 +289,13 @@ BorderSurface {
     // ordinary toast keeps its shape. The first is the primary — it carries the
     // accent fill, the rest are ink washes — which is the same weighting the
     // profile pills use, so a button means the same thing across the theme.
-    RowLayout {
+    ColumnLayout {
       visible: root.actions.length > 0
       Layout.fillWidth: true
       Layout.leftMargin: Style.spacing.popupPadding
       Layout.rightMargin: Style.spacing.popupPadding
       Layout.bottomMargin: Style.spacing.popupPadding
       spacing: Style.spacing.controlGap
-
-      // Pushes the group to the trailing edge. A RowLayout rather than a Flow
-      // because Flow can only right-align by reversing its direction, which
-      // would put the primary action last; notifications carry one to three
-      // actions, so the wrapping a Flow gave us is not worth losing the
-      // reading order for.
-      Item { Layout.fillWidth: true }
 
       Repeater {
         model: root.actions
@@ -314,10 +307,9 @@ BorderSurface {
           readonly property bool primary: index === 0
           readonly property bool hot: actionMouse.containsMouse
 
-          implicitWidth: actionLabel.implicitWidth + Style.spacing.controlPaddingX * 2
+          Layout.fillWidth: true
+          implicitWidth: actionLabel.implicitWidth + Style.spacing.sm * 2
           implicitHeight: actionLabel.implicitHeight + Style.spacing.controlPaddingY * 2
-          width: implicitWidth
-          height: implicitHeight
           radius: Style.cornerRadius
           // Ink washes, not the accent. The theme's controls on a tinted card
           // are the card's own ink at a weight — the battery profile pills are
